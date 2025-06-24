@@ -1,7 +1,5 @@
 # Annotation_and_enrichment_for_miRNA-
 
-Here is a clean and structured **English documentation** for the Bash script `Enrich_miRNA.sh` you provided:
-
 ---
 
 
