@@ -4,6 +4,11 @@ Here is a clean and structured **English documentation** for the Bash script `En
 
 ---
 
+
+
+
+
+
 # 📄 Script Documentation: `Enrich_miRNA.sh`
 
 ## 🧾 Purpose
@@ -103,12 +108,139 @@ The script will prompt the user interactively for:
 
 ---
 
-## 🔧 Notes
-
-* The script handles basic validation (e.g., numeric input, valid database names).
-* Files larger than 100MB should be managed outside GitHub or using Git LFS if versioned.
-* Database file names are normalized internally for compatibility with downstream analysis.
+Here is a detailed **English documentation** for your R script `Annot_genes.R`:
 
 ---
 
-Let me know if you’d like a **README.md** version of this documentation for your GitHub repository.
+# 📄 Script Documentation: `Annot_genes.R`
+
+## 🎯 Purpose
+
+This script performs **target gene annotation** and **functional enrichment analysis** for a given list of **mature miRNAs**, using one or more miRNA-target databases. It supports filtering by interaction count and field mode (`INTER` or `UNION`) and executes downstream enrichment analysis using **EnrichR**, **ClusterProfiler**, and **ReactomePA**.
+
+---
+
+## 🧾 Input Arguments
+
+The script must be run via command line and accepts **six positional arguments**:
+
+```bash
+Rscript Annot_genes.R <miRNA_list> <databases> <output_directory> <field_mode> <nb_interact> <enrichment_databases>
+```
+
+### 🔢 Arguments Explained
+
+| Position | Argument               | Description                                                                                            |
+| -------- | ---------------------- | ------------------------------------------------------------------------------------------------------ |
+| 1        | `miRNA_list`           | Comma-separated list of mature miRNA IDs                                                               |
+| 2        | `databases`            | Comma-separated paths to database files                                                                |
+| 3        | `output_directory`     | Output folder for results                                                                              |
+| 4        | `field_mode`           | Mode for intersecting results: `"INTER"` or `"UNION"`                                                  |
+| 5        | `nb_interact`          | Minimum number of distinct miRNAs regulating a gene                                                    |
+| 6        | `enrichment_databases` | Comma-separated list of enrichment tools: `EnrichR`, `ClusterProfiler`, `ReactomePA`, or a combination |
+
+---
+
+## 📚 Database Handling
+
+Each selected database is parsed and filtered based on format and specific thresholds. Supported databases include:
+
+| Database     | Filtering Method                                                                  |
+| ------------ | --------------------------------------------------------------------------------- |
+| ENCORI       | Direct import (optional filtering commented)                                      |
+| miRDB        | Score threshold (read from `_score.txt` file); gene names converted via `biomaRt` |
+| TargetScan   | Filter by PCT score and species; miRNA family parsing                             |
+| TarBase      | Filter by `microt_score`                                                          |
+| DianaTarbase | Filter by `species == Homo sapiens`                                               |
+| miRTarBase   | Filter by support type `"Functional MTI"`                                         |
+
+Each database is transformed into a common format: pairs of `miRNA` and `geneName`.
+
+---
+
+## 🔗 Interaction Aggregation
+
+* All interactions across databases are merged.
+* If `field_mode` is `INTER`, only miRNAs present in all databases are retained.
+* Genes targeted by at least `nb_interact` unique miRNAs are selected.
+
+---
+
+## 📄 Output Files
+
+The following result files are generated in the `output_directory`:
+
+| File                              | Description                         |
+| --------------------------------- | ----------------------------------- |
+| `Selected_Genes.txt`              | Final list of selected gene symbols |
+| `Interactions_miRNA_filtered.txt` | miRNA-to-gene filtered interactions |
+| Enrichment result files           | See below                           |
+
+---
+
+## 🧬 Functional Enrichment Analysis
+
+For the selected genes, the script performs enrichment analysis using the tools specified:
+
+### 🔹 EnrichR
+
+* Databases used: `GO_Biological_Process_2021`, `KEGG_2021_Human`, `Reactome_2022`
+* Output:
+
+  * `GO_Results.txt`
+  * `KEGG_Results.txt`
+  * `Reactome_Results.txt`
+
+### 🔹 ClusterProfiler
+
+* Gene Ontology Biological Process analysis
+* Visual output: `ClusterProfiler.pdf` (barplot of top 10 terms)
+* Data: `ClusterProfiler_results.csv`
+
+### 🔹 ReactomePA
+
+* Reactome pathway enrichment
+* Visual output: `ReactomePA.pdf`
+* Data: `ReactomePA_results.csv`
+
+> All visual outputs are saved as PDF using the **Cairo** graphics library.
+
+---
+
+## 💻 Requirements
+
+### R Packages (loaded silently)
+
+* `dplyr`, `readr`, `tidyr`, `purrr`
+* `biomaRt`, `org.Hs.eg.db`, `DOSE`
+* `enrichR`, `clusterProfiler`, `ReactomePA`
+* `Cairo` (for PDF plots)
+
+Make sure they are installed via:
+
+```r
+install.packages("BiocManager")
+BiocManager::install(c("biomaRt", "org.Hs.eg.db", "DOSE", "clusterProfiler", "ReactomePA", "enrichR"))
+install.packages("Cairo")
+```
+
+---
+
+## ✅ Example
+
+```bash
+Rscript Annot_genes.R "hsa-miR-21,hsa-miR-34a" "DB/ENCORI.txt,DB/miRDB.txt" Results_enrichment UNION 2 "EnrichR,ClusterProfiler"
+```
+
+---
+
+## 📝 Notes
+
+* Gene symbols are internally converted to Entrez IDs when required (e.g., for ReactomePA).
+* Intermediate and final filtering ensures only biologically meaningful genes are retained.
+* If any enrichment tool fails to return results, the script notifies the user and skips plot generation.
+
+---
+
+
+
